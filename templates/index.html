@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>استخراج‌کننده عکس‌های اینستاگرام</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<style>
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/fonts/webfonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+}
+
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --border: #30363d;
+  --accent: #e1306c;
+  --accent2: #833ab4;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --success: #3fb950;
+  --error: #f85149;
+  --warn: #d29922;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  background: radial-gradient(circle at 20% -10%, #24123a 0%, var(--bg) 45%);
+  color: var(--text);
+  margin: 0;
+  min-height: 100vh;
+  padding: 32px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.wrap { width: 100%; max-width: 620px; }
+
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.header h1 {
+  font-size: 1.6rem;
+  margin: 0 0 6px;
+  background: linear-gradient(90deg, var(--accent2), var(--accent), #fd8b3a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.header p { color: var(--muted); margin: 0; font-size: 0.9rem; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+
+input[type=text], input[type=number] {
+  width: 100%;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  margin-bottom: 14px;
+  transition: border-color .2s;
+}
+input:focus { outline: none; border-color: var(--accent); }
+
+.row { display: flex; gap: 10px; }
+.row > div { flex: 1; }
+
+button {
+  font-family: inherit;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform .15s, opacity .15s;
+}
+button:hover { transform: translateY(-1px); }
+button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-primary {
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  color: white;
+  width: 100%;
+}
+.btn-row { display: flex; gap: 10px; margin-top: 12px; }
+.btn-row button { flex: 1; }
+.btn-pause { background: var(--warn); color: #1c1c1c; }
+.btn-resume { background: var(--success); color: #08240f; }
+.btn-stop { background: var(--error); color: #2a0a08; }
+.btn-download { background: #21262d; color: var(--text); border: 1px solid var(--border); }
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.status-idle { background: #21262d; color: var(--muted); }
+.status-running { background: rgba(63,185,80,0.15); color: var(--success); }
+.status-paused { background: rgba(210,153,34,0.15); color: var(--warn); }
+.status-done { background: rgba(63,185,80,0.15); color: var(--success); }
+.status-error, .status-stopped { background: rgba(248,81,73,0.15); color: var(--error); }
+
+.stats { display: flex; gap: 10px; margin: 16px 0; }
+.stat-box {
+  flex: 1;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+.stat-box .num { font-size: 1.4rem; font-weight: 700; }
+.stat-box .label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+.progress-bar-outer {
+  height: 8px;
+  background: #0d1117;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.progress-bar-inner {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  transition: width .4s ease;
+}
+
+.current-post { font-size: 0.85rem; color: var(--muted); margin-top: 10px; text-align: center; }
+
+.log-box {
+  background: #010409;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  height: 180px;
+  overflow-y: auto;
+  font-size: 0.78rem;
+  color: #8b949e;
+  direction: ltr;
+  text-align: left;
+  font-family: 'Courier New', monospace;
+}
+.log-box div { margin-bottom: 3px; }
+
+.error-msg {
+  background: rgba(248,81,73,0.1);
+  border: 1px solid var(--error);
+  color: var(--error);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>استخراج‌کننده عکس‌های اینستاگرام</h1>
+    <p>دانلود تمام عکس‌های یک پیج عمومی — بدون ویدیو</p>
+  </div>
+
+  <div class="card">
+    <label for="username">نام کاربری پیج (بدون @)</label>
+    <input type="text" id="username" placeholder="مثلاً nasa">
+
+    <label for="maxposts">حداکثر تعداد پست (اختیاری - خالی = همه)</label>
+    <input type="number" id="maxposts" placeholder="مثلاً 200">
+
+    <button class="btn-primary" id="startBtn" onclick="startScrape()">شروع استخراج</button>
+
+    <div class="btn-row">
+      <button class="btn-pause" id="pauseBtn" onclick="pauseScrape()" disabled>مکث</button>
+      <button class="btn-resume" id="resumeBtn" onclick="resumeScrape()" disabled>ادامه</button>
+      <button class="btn-stop" id="stopBtn" onclick="stopScrape()" disabled>توقف کامل</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <span>وضعیت:</span>
+      <span class="status-badge status-idle" id="statusBadge">آماده</span>
+    </div>
+
+    <div class="progress-bar-outer">
+      <div class="progress-bar-inner" id="progressBar"></div>
+    </div>
+    <div class="current-post" id="currentPost">—</div>
+
+    <div class="stats">
+      <div class="stat-box">
+        <div class="num" id="statPhotos">0</div>
+        <div class="label">عکس دانلود شده</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="statVideos">0</div>
+        <div class="label">ویدیو رد شده</div>
+      </div>
+      <div class="stat-box">
+        <div class="num" id="statTotal">0</div>
+        <div class="label">کل پست‌های پیج</div>
+      </div>
+    </div>
+
+    <div id="errorBox"></div>
+
+    <button class="btn-download" style="width:100%; margin-top:14px;" id="downloadBtn" onclick="downloadZip()" disabled>
+      دانلود فایل zip عکس‌ها
+    </button>
+  </div>
+
+  <div class="card">
+    <label>گزارش زنده</label>
+    <div class="log-box" id="logBox"></div>
+  </div>
+</div>
+
+<script>
+let polling = null;
+
+function setButtons(status) {
+  document.getElementById('startBtn').disabled = (status === 'running' || status === 'paused');
+  document.getElementById('pauseBtn').disabled = (status !== 'running');
+  document.getElementById('resumeBtn').disabled = (status !== 'paused');
+  document.getElementById('stopBtn').disabled = !(status === 'running' || status === 'paused');
+  document.getElementById('downloadBtn').disabled = !(status === 'done' || status === 'paused' || status === 'stopped' || status === 'running');
+}
+
+function statusLabel(s) {
+  const map = {
+    idle: 'آماده', running: 'در حال دانلود...', paused: 'مکث شده',
+    done: 'کامل شد ✓', error: 'خطا', stopped: 'متوقف شد'
+  };
+  return map[s] || s;
+}
+
+async function startScrape() {
+  const username = document.getElementById('username').value.trim();
+  const maxPosts = document.getElementById('maxposts').value.trim();
+  if (!username) { alert('لطفاً نام کاربری رو وارد کنید.'); return; }
+
+  const res = await fetch('/start', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username, max_posts: maxPosts || null})
+  });
+  const data = await res.json();
+  if (!data.ok) { alert(data.message); return; }
+  startPolling();
+}
+
+async function pauseScrape() { await fetch('/pause', {method: 'POST'}); }
+async function resumeScrape() { await fetch('/resume', {method: 'POST'}); }
+async function stopScrape() {
+  if (!confirm('مطمئنید می‌خواید کامل متوقف بشه؟')) return;
+  await fetch('/stop', {method: 'POST'});
+}
+
+function downloadZip() {
+  window.location.href = '/download-zip';
+}
+
+function startPolling() {
+  if (polling) clearInterval(polling);
+  polling = setInterval(fetchStatus, 1000);
+  fetchStatus();
+}
+
+async function fetchStatus() {
+  const res = await fetch('/status');
+  const s = await res.json();
+
+  const badge = document.getElementById('statusBadge');
+  badge.className = 'status-badge status-' + s.status;
+  badge.textContent = statusLabel(s.status);
+
+  document.getElementById('statPhotos').textContent = s.photos_downloaded;
+  document.getElementById('statVideos').textContent = s.videos_skipped;
+  document.getElementById('statTotal').textContent = s.total_posts_seen || 0;
+
+  document.getElementById('currentPost').textContent = s.current_post ? ('در حال بررسی پست: ' + s.current_post) : '—';
+
+  const pct = s.total_posts_seen ? Math.min(100, (s.photos_downloaded + s.videos_skipped) / s.total_posts_seen * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  const logBox = document.getElementById('logBox');
+  logBox.innerHTML = (s.log || []).map(l => `<div>${l}</div>`).join('');
+  logBox.scrollTop = logBox.scrollHeight;
+
+  const errorBox = document.getElementById('errorBox');
+  errorBox.innerHTML = s.error ? `<div class="error-msg">${s.error}</div>` : '';
+
+  setButtons(s.status);
+
+  if (s.status === 'done' || s.status === 'error' || s.status === 'stopped') {
+    clearInterval(polling);
+    polling = null;
+  }
+}
+
+// در صورت رفرش صفحه، وضعیت فعلی رو بگیر
+fetchStatus();
+</script>
+</body>
+</html>
